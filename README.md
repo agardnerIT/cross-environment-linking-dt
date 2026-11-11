@@ -9,7 +9,7 @@ All services are instrumented with OpenTelemetry so the end-to-end flow is well 
 
 * `org1` wants to store **only** their part of the transaction (data sovereignty and cost)
 * `org2` also only wants to store their part of the transaction (data sovereignty and cost)
-* `org1` users need to be able to "drill down" into `org2` transactions)
+* `org1` users need to be able to "drill down" into `org2` transactions
 * `org2` users need to be able to "drill up" into transactions that originated in `org1`
 
 
@@ -22,18 +22,22 @@ All services are instrumented with OpenTelemetry so the end-to-end flow is well 
 * Spans from `serviceC` and `serviceD` flow through a different OpenTelemetry collector into the `org2` environment
 * Importantly, for any given individual transaction, spans for `serviceA`, `serviceB`, `serviceC` and `serviceD` ALL carry the same trace ID meaning Dynatrace can represent all 4 spans as a single end-to-end transaction.
 
-## The Hands On
-
-First make sure Docker is running: `docker ps` should work.
 
 * `serviceA` will be running on `http://localhost:9000`
 * `serviceB` will be running on `http://localhost:9001`
 * `serviceC` will be running on `http://localhost:9002`
 * `serviceD` will be running on `http://localhost:9003`
 
+## The Hands On
+
+First make sure Docker is running: `docker ps` should work.
+
+
 ```
 git clone https://github.com/agardnerIT/cross-environment-linking-dt
 cd cross-environment-linking-dt
+python -m venv .venv
+source bin/activate
 ```
 
 Start the stack:
@@ -41,9 +45,4 @@ Start the stack:
 ```
 ./run.sh
 ```
-
-
-
-
-
 
