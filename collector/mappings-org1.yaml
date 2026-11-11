@@ -1,4 +1,0 @@
-# destination origin -> other tenant's explorer URL prefix (trace ID appended by the collector) + peer service name
-"http://localhost:9002":
-  url: "https://ORG2_DT_ENV_PLACEHOLDER.apps.dynatrace.com/ui/apps/dynatrace.distributedtracing/explorer?filter=trace.id+%3D+"
-  service: servicec
