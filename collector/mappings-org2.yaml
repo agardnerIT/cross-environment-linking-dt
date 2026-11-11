@@ -1,0 +1,4 @@
+# Org2 entry-point origin -> Org1 explorer URL prefix + the Org1 service that calls it
+"http://localhost:9002":
+  url: "https://ORG1_DT_ENV_PLACEHOLDER.apps.dynatrace.com/ui/apps/dynatrace.distributedtracing/explorer?filter=trace.id+%3D+"
+  service: serviceb
