@@ -32,6 +32,9 @@ All services are instrumented with OpenTelemetry so the end-to-end flow is well 
 
 First make sure Docker is running: `docker ps` should work.
 
+Now make a note of the `org1` environment ID (eg. `abc12345`) and the `org2` environment ID (eg. `def23456`).
+
+Now grab this code, create a Python virtual environment (to keep your local machine clean) and activate it.
 
 ```
 git clone https://github.com/agardnerIT/cross-environment-linking-dt
@@ -40,9 +43,56 @@ python -m venv .venv
 source bin/activate
 ```
 
+> [!IMPORTANT]  
+> Dynatrace acts differently here depending on when your account was created. Read this section carefully!
+
+In each environment, create an API token. In Dynatrace, press `Ctrl + k` and search for `api tokens` and you should see the `Access tokens` app. Open it.
+
+<img width="218" height="120" alt="image" src="https://github.com/user-attachments/assets/da22ffdf-8490-4f8d-b78f-bf96c8fb8fcc" />
+
+Create an API token with `openTelemetryTrace.ingest` permissions.
+
+> [!TIP]
+> "Access tokens" may not bring back any results.
+> If so, go to `https://myaccount.dynatrace.com/platformTokens` and use the permission: `openpipeline:traces:ingest`
+
+Create a `.env` file from the `.env.sample` template and enter your values. Your `.env` should look something like this:
+
+
+```
+export DT_ENV1_ID=abc12345
+export DT_ENV2_ID=def23456
+
+// May start with dt0c01 or dt0s16 (either are correct)
+export DT_ENV1_INGEST_TOKEN=dt0s16.TODO.SAMPLE
+export DT_ENV2_INGEST_TOKEN=dt0s16.TODO.SAMPLE
+```
+
 Start the stack:
 
 ```
 ./run.sh
+```
+
+Start `org1` collector:
+
+```
+source .env
+docker run --rm --name otelcol-org1 \
+  -p 4318:4318 \
+  -e DT_ENV1_ID -e DT_ENV1_INGEST_TOKEN \
+  -v "$(pwd)/collector/org1-collector.yaml:/config.yaml:ro" \
+  otel/opentelemetry-collector-contrib:0.155.0 --config /config.yaml
+```
+
+Start `org2` collector:
+
+```
+source .env
+docker run --rm --name otelcol-org2 \
+  -p 4328:4328 \
+  -e DT_ENV2_ID -e DT_ENV2_INGEST_TOKEN \
+  -v "$(pwd)/collector/org2-collector.yaml:/config.yaml:ro" \
+  otel/opentelemetry-collector-contrib:0.155.0 --config /config.yaml
 ```
 
