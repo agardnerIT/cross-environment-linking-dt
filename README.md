@@ -68,13 +68,22 @@ export DT_ENV1_INGEST_TOKEN=dt0s16.TODO.SAMPLE
 export DT_ENV2_INGEST_TOKEN=dt0s16.TODO.SAMPLE
 ```
 
-Start the stack:
+The collector YAMLs contain placeholders so replace them with real Dynatrace environment values now (this will be explained in more detail later):
+
+```
+source .env
+python replace_placeholders.py
+```
+
+Open four terminal windows.
+
+In the first terminal, start the stack:
 
 ```
 ./run.sh
 ```
 
-Start `org1` collector:
+In a second terminal, start `org1` collector:
 
 ```
 source .env
@@ -85,7 +94,7 @@ docker run --rm --name otelcol-org1 \
   otel/opentelemetry-collector-contrib:0.155.0 --config /config.yaml
 ```
 
-Start `org2` collector:
+In a third terminal, start `org2` collector:
 
 ```
 source .env
@@ -95,4 +104,72 @@ docker run --rm --name otelcol-org2 \
   -v "$(pwd)/collector/org2-collector.yaml:/config.yaml:ro" \
   otel/opentelemetry-collector-contrib:0.155.0 --config /config.yaml
 ```
+
+## Run Traffic
+
+In a fourth terminal, send a request to `serviceA`:
+
+```
+curl http://localhost:9000
+```
+
+You should see this response, proving the request has hit all 4 services:
+
+```
+{"path":["servicea","serviceb","servicec","serviced"]}
+```
+
+## View Data in Dynatrace
+
+Open the Dynatrace environment for `organisation 1` and press `ctrl + k`. Search for `distributed traces` and open the `Distributed Tracing` app.
+
+<img width="218" height="120" alt="image" src="https://github.com/user-attachments/assets/b489ca91-d253-4b32-9f88-0520d2569971" />
+
+Optional: Open the search facets (left hand panel) and filter for `servicea` and `serviceb`.
+
+<img width="985" height="117" alt="image" src="https://github.com/user-attachments/assets/53a937a0-386b-4dc0-8178-43948f0d2fa1" />
+
+Open the `servicea` span and notice the transaction flows all the way through `serviceb` (in other words, you have an end-to-end view for `org`).
+
+<img width="1271" height="305" alt="image" src="https://github.com/user-attachments/assets/fce0a828-a922-4411-828e-d77b64d68d89" />
+
+Now highlight the first `client` span in `serviceb` and search for `peer trace url`. You will see the hyperlink to the `organisation 2` environment.
+
+Copy the trace URL by hovering over the right hand side of the URL and under the "three dots" icon you'll find a copy option.
+
+<img width="1271" height="305" alt="image" src="https://github.com/user-attachments/assets/95795148-d086-4214-a481-b1030cf85c25" />
+<img width="1271" height="191" alt="image" src="https://github.com/user-attachments/assets/a8136aea-174c-4afc-9c0c-eb895229ff8c" />
+
+Open the `org 2` URL in a new tab and (presuming you have access rights into the `org2` environment) you'll see the distributed traces app pre filtered for your trace and should see the transaction continuing through `servicec` and `serviced`.
+
+<img width="1403" height="449" alt="image" src="https://github.com/user-attachments/assets/5a711c21-44b6-4334-94ae-b8b0d675a2f4" />
+
+### Navigating Backwards
+
+Highlight the first `server` span in `servicec` and search again for `peer trace url` and you'll see a link "back" to `org1`. So no matter whether you're a staff member at `org1` or `org2`, you can each find the correlating traces and navigate easily between environments.
+
+<img width="1177" height="539" alt="image" src="https://github.com/user-attachments/assets/5fe9b5a4-c56c-4320-a4d0-df5f0649694b" />
+
+## How Does it Work?
+
+We already know the spans flow through two different OpenTelemetry collectors. The "magic" happens in those collectors. So let's take a closer look. Open [collector/org1-collector.yaml](collector/org1-collector.yaml). Lines 19 to 23 define a single data pipeline which handles a data type of traces (the collector can also handle `metrics` and `logs`). This pipeline is simple. Traces (spans) are received via OTLP (the services send spans to this collector) then the collector `transform`s the spans in realtime then the modified spans are sent to `organisation 1`s Dynatrace environment.
+
+Let's take a closer look at that `transform` block as it's key to understanding how this all works. The key line is this (split over multiple lines here for readability).
+
+```
+- set(span.attributes["peer.trace.url"],
+  Concat(["https://def23456.apps.dynatrace.com/ui/apps/dynatrace.distributedtracing/explorer?filter=trace.id+%3D+", span.trace_id.string], ""))
+  where span.attributes["http.url"] == "http://localhost:9002/"
+```
+
+As spans from `servicea` and `serviceb` flow through this collector, whenever the span has an attribute called `http.url` and it's value is `http://localhost:9002` (which is the case for spans produced when `serviceb` calls out to `services`) then the collector adds a **new** attribute onto that span with a key of `peer.trace.url` and a value which is a concatenation of `org2` Dynatrace environment ID deep linking to the `Distributed Tracing` app pre filtered by the trace ID pulled from this span.
+
+So remember, this logic is applied to `serviceb` spans so users can hyperlink "downstream" into `servicec`. The exact same logic applies in [collector/org1-collector.yaml](collector/org2-collector.yaml) but in reverse (so `servicec` spans are linked "back" to their `serviceb` source).
+
+> [!TIP]
+> If you had many rules, maintaining this list could become unweildy. There is another option to use a YAML lookup table but that requires a custom collector build (nowhere near as scary as it sounds) but it does mean slightly more work. The method above will work with almost any standard OpenTelemetry collector distribution (which is why we've chosen it as step 1 above).
+> If you would like instructions on how to use the [lookup processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/lookupprocessor) method, please [open an issue](https://github.com/agardnerIT/cross-environment-linking-dt/issues/new).
+
+
+
 
