@@ -65,7 +65,7 @@ export DT_ENV2_ID=def23456
 
 // May start with dt0c01 or dt0s16 (either are correct)
 export DT_ENV1_INGEST_TOKEN=dt0s16.TODO.SAMPLE
-export DT_ENV2_INGEST_TOKEN=dt0s16.TODO.SAMPLE
+export DT_ENV2_INGEST_TOKEN=dt0c01.TODO.SAMPLE
 ```
 
 The collector YAMLs contain placeholders so replace them with real Dynatrace environment values now (this will be explained in more detail later):
