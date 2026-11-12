@@ -167,7 +167,7 @@ As spans from `servicea` and `serviceb` flow through this collector, whenever th
 So remember, this logic is applied to `serviceb` spans so users can hyperlink "downstream" into `servicec`. The exact same logic applies in [collector/org1-collector.yaml](collector/org2-collector.yaml) but in reverse (so `servicec` spans are linked "back" to their `serviceb` source).
 
 > [!TIP]
-> If you had many rules, maintaining this list could become unweildy. There is another option to use a YAML lookup table but that requires a custom collector build (nowhere near as scary as it sounds) but it does mean slightly more work. The method above will work with almost any standard OpenTelemetry collector distribution (which is why we've chosen it as step 1 above).
+> If you had many rules, maintaining this list could become unwieldy. There is another option to use a YAML lookup table but that requires a custom collector build (nowhere near as scary as it sounds) but it does mean slightly more work. The method above will work with almost any standard OpenTelemetry collector distribution (which is why we've chosen it as step 1 above).
 > If you would like instructions on how to use the [lookup processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/lookupprocessor) method, please [open an issue](https://github.com/agardnerIT/cross-environment-linking-dt/issues/new).
 
 
